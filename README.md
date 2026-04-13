@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Crucible
 
-## Getting Started
+Behavioral simulation platform for NEXUS Holdings. Operators configure personas and engine weights, launch runs against a target URL, and review storyboards, conflict heatmaps, and session intelligence.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Next.js 16 (App Router, Turbopack), React 19, TypeScript
+- Tailwind CSS v4, shadcn/ui (Base UI)
+- Supabase (`crucible` schema on project **nexus-core**)
+- BioLoop Orchestrator for job dispatch and callbacks
+- Anthropic and Resend (optional)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Copy [`.env.example`](.env.example) to `.env.local` and fill values.
+2. Apply SQL in [`supabase/migrations/`](supabase/migrations/) to the nexus-core project (SQL editor or Supabase CLI).
+3. `npm install` then `npm run dev`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Railway
 
-## Learn More
+Set `NEXT_PUBLIC_APP_URL` to the public HTTPS URL of this service so the orchestrator can call `POST /api/crucible/callback`. Configure Supabase and BioLoop keys in Railway variables.
 
-To learn more about Next.js, take a look at the following resources:
+## Auth
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- With `NEXT_PUBLIC_NEXUS_LOGIN_URL`, unauthenticated users are sent to Nexus SSO.
+- Without it, **development** exposes an email magic link form; production expects Nexus URL or your own IdP wiring via `auth/callback`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Proxy (Next.js 16)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Session refresh uses [`proxy.ts`](proxy.ts) (not `middleware.ts`).
