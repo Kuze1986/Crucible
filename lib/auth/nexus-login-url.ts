@@ -5,19 +5,21 @@ import { sanitizeNextPath } from "@/lib/auth/site-url";
  * to Supabase PKCE exchange on this app.
  *
  * Env:
- * - NEXT_PUBLIC_APP_URL — canonical site URL (required for redirect hints in production)
- * - NEXT_PUBLIC_NEXUS_REDIRECT_PARAM — query key for the post-login browser URL (default: redirect_uri)
+ * - NEXT_PUBLIC_APP_URL — canonical site URL (falls back to request headers via resolvePublicAppUrl)
+ * - NEXT_PUBLIC_NEXUS_REDIRECT_PARAM — query key for the post-login browser URL (default: redirect_to)
  * - NEXT_PUBLIC_NEXUS_NEXT_PARAM — query key for deep-link after auth (default: next)
+ *
+ * @param appBaseOverride — e.g. from resolvePublicAppUrl() when env is unset (Railway).
  */
-export function buildNexusLoginUrl(nextPath?: string | null): string {
+export function buildNexusLoginUrl(nextPath?: string | null, appBaseOverride?: string | null): string {
   const base = process.env.NEXT_PUBLIC_NEXUS_LOGIN_URL?.trim();
   if (!base) return "/login";
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  const appUrl = (appBaseOverride ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
   const u = new URL(base);
 
   if (appUrl) {
-    const redirectKey = process.env.NEXT_PUBLIC_NEXUS_REDIRECT_PARAM?.trim() || "redirect_uri";
+    const redirectKey = process.env.NEXT_PUBLIC_NEXUS_REDIRECT_PARAM?.trim() || "redirect_to";
     if (!u.searchParams.get(redirectKey)) {
       u.searchParams.set(redirectKey, `${appUrl}/auth/callback`);
     }

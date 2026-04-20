@@ -1,24 +1,21 @@
 import Link from "next/link";
 
+import { buildNexusLoginUrl } from "@/lib/auth/nexus-login-url";
+import { resolvePublicAppUrl } from "@/lib/auth/public-origin";
 import { LoginDevForm } from "@/components/crucible/login-dev-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const sp = await searchParams;
   const err = sp.error;
-  const nexusUrl = process.env.NEXT_PUBLIC_NEXUS_LOGIN_URL;
-  const appBase = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
-  const authCallback = `${appBase}/auth/callback`;
-  const nexusHref =
-    nexusUrl != null && nexusUrl !== ""
-      ? `${nexusUrl}${nexusUrl.includes("?") ? "&" : "?"}redirect_to=${encodeURIComponent(authCallback)}`
-      : null;
+  const appBase = await resolvePublicAppUrl();
+  const nexusHref = buildNexusLoginUrl(sp.next, appBase || undefined);
 
-  if (nexusHref) {
+  if (nexusHref !== "/login") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <Card className="w-full max-w-md border-white/10 bg-[#0f1117]">
@@ -34,12 +31,13 @@ export default async function LoginPage({
                 {err}
               </p>
             ) : null}
-            <Link
+            <a
               href={nexusHref}
+              rel="noopener noreferrer"
               className="inline-flex h-10 w-full items-center justify-center rounded-md bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-500"
             >
               Continue to sign in
-            </Link>
+            </a>
             <p className="text-center text-xs text-muted-foreground">
               <Link href="/admin/login" className="text-indigo-400 hover:underline">
                 Admin sign-in
