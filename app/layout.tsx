@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { AuthProvider } from "@/components/crucible/auth-context";
+import { KuzeWidgetProvider } from "@/components/kuze/KuzeWidgetProvider";
+import { Toaster } from "@/components/ui/toaster";
 
 import "./globals.css";
 
@@ -31,7 +33,11 @@ export default function RootLayout({
       className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#0a0b0f] text-foreground font-sans">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <KuzeWidgetProvider />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

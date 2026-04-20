@@ -33,7 +33,22 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return <p className="text-red-400">Failed to load runs: {error.message}</p>;
+    const msg = typeof error.message === "string" ? error.message : "";
+    const lower = msg.toLowerCase();
+    let hint = "";
+    if (lower.includes("invalid schema")) {
+      hint =
+        " In Supabase, expose this schema under Settings → Data API → Exposed schemas, or set NEXT_PUBLIC_SUPABASE_SCHEMA (e.g. public) to match where your Crucible tables live.";
+    } else if (lower.includes("permission denied for schema")) {
+      hint =
+        " Run the SQL in supabase/migrations/20260419120000_crucible_api_grants.sql (GRANT USAGE + table privileges for anon/authenticated) in the Supabase SQL editor, then retry.";
+    }
+    return (
+      <p className="text-red-400">
+        Failed to load runs: {error.message}
+        {hint}
+      </p>
+    );
   }
 
   const list = (runs ?? []) as SimulationRunRow[];
