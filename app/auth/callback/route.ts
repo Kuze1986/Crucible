@@ -3,35 +3,37 @@ import { NextResponse } from "next/server";
 
 import { createServerClient } from "@supabase/ssr";
 
+import { getSiteUrl, sanitizeNextPath } from "@/lib/auth/site-url";
+
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const urlObj = new URL(request.url);
+  const code = urlObj.searchParams.get("code");
+  const next = sanitizeNextPath(urlObj.searchParams.get("next"), "/dashboard");
+  const siteUrl = getSiteUrl(request);
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(new URL("/login", siteUrl));
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    return NextResponse.redirect(`${origin}/login?error=config`);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) {
+    return NextResponse.redirect(new URL("/login?error=config", siteUrl));
   }
 
   const cookieStore = await cookies();
-  const supabase = createServerClient(url, key, {
+  const redirectTarget = new URL(next, siteUrl);
+  const redirectResponse = NextResponse.redirect(redirectTarget);
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        try {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        } catch {
-          /* ignore */
-        }
+        cookiesToSet.forEach(({ name, value, options }) => {
+          redirectResponse.cookies.set(name, value, options);
+        });
       },
     },
   });
@@ -39,9 +41,9 @@ export async function GET(request: Request) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(error.message)}`
+      new URL(`/login?error=${encodeURIComponent(error.message)}`, siteUrl)
     );
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  return redirectResponse;
 }

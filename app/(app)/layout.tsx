@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { AppChrome } from "@/components/crucible/app-chrome";
+import { buildNexusLoginUrl } from "@/lib/auth/nexus-login-url";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +13,8 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
   } = await supabase.auth.getUser();
 
   if (!user) {
-    const ext = process.env.NEXT_PUBLIC_NEXUS_LOGIN_URL;
-    if (ext) redirect(ext);
+    const nexusHref = buildNexusLoginUrl();
+    if (nexusHref !== "/login") redirect(nexusHref);
     redirect("/login");
   }
 

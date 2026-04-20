@@ -11,8 +11,14 @@ export default async function LoginPage({
   const sp = await searchParams;
   const err = sp.error;
   const nexusUrl = process.env.NEXT_PUBLIC_NEXUS_LOGIN_URL;
+  const appBase = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const authCallback = `${appBase}/auth/callback`;
+  const nexusHref =
+    nexusUrl != null && nexusUrl !== ""
+      ? `${nexusUrl}${nexusUrl.includes("?") ? "&" : "?"}redirect_to=${encodeURIComponent(authCallback)}`
+      : null;
 
-  if (nexusUrl) {
+  if (nexusHref) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4">
         <Card className="w-full max-w-md border-white/10 bg-[#0f1117]">
@@ -29,11 +35,16 @@ export default async function LoginPage({
               </p>
             ) : null}
             <Link
-              href={nexusUrl}
+              href={nexusHref}
               className="inline-flex h-10 w-full items-center justify-center rounded-md bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-500"
             >
               Continue to sign in
             </Link>
+            <p className="text-center text-xs text-muted-foreground">
+              <Link href="/admin/login" className="text-indigo-400 hover:underline">
+                Admin sign-in
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -63,6 +74,11 @@ export default async function LoginPage({
               Production builds require Nexus login URL or a configured IdP flow.
             </p>
           )}
+          <p className="text-center text-xs text-muted-foreground">
+            <Link href="/admin/login" className="text-indigo-400 hover:underline">
+              Admin sign-in
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

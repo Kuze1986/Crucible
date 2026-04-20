@@ -25,6 +25,10 @@ Set `NEXT_PUBLIC_APP_URL` to the public HTTPS URL of this service so the orchest
 - With `NEXT_PUBLIC_NEXUS_LOGIN_URL`, unauthenticated users are sent to Nexus SSO.
 - Without it, **development** exposes an email magic link form; production expects Nexus URL or your own IdP wiring via `auth/callback`.
 
+## Admin
+
+- Set `ADMIN_PASSWORD` to enable [`/admin/login`](app/admin/login/page.tsx) (password + signed **httpOnly** cookie, 7-day session). This is **separate** from Supabase app sign-in; use it for operator access or when debugging auth.
+
 ## Proxy (Next.js 16)
 
 Session refresh uses [`proxy.ts`](proxy.ts) (not `middleware.ts`).
