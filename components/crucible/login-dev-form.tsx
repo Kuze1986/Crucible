@@ -9,9 +9,55 @@ import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export function LoginDevForm() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [pwdError, setPwdError] = useState<string | null>(null);
+
+  async function onPasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPwdLoading(true);
+    setPwdError(null);
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setPwdError(error.message);
+        return;
+      }
+
+      const redirectTo = new URLSearchParams(window.location.search).get("redirect_to");
+      if (redirectTo) {
+        let raw: string;
+        try {
+          raw = decodeURIComponent(redirectTo);
+        } catch {
+          setPwdError("Invalid redirect_to");
+          return;
+        }
+        const target = new URL(raw, window.location.origin);
+        if (target.origin !== window.location.origin) {
+          if (!data.session) {
+            setPwdError("No session to transfer to the other app.");
+            return;
+          }
+          target.searchParams.set("access_token", data.session.access_token);
+          target.searchParams.set("refresh_token", data.session.refresh_token);
+          window.location.assign(target.toString());
+        } else {
+          window.location.assign(target.toString());
+        }
+      } else {
+        window.location.assign("/");
+      }
+    } catch (err) {
+      setPwdError(err instanceof Error ? err.message : "Request failed");
+    } finally {
+      setPwdLoading(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,23 +87,52 @@ export function LoginDevForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@company.com"
-          className="border-white/10 bg-black/40"
-        />
+    <div className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-3">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            className="border-white/10 bg-black/40"
+          />
+        </div>
+        {message ? <p className="text-sm text-red-400">{message}</p> : null}
+        <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500">
+          {loading ? "Sending…" : "Send magic link"}
+        </Button>
+      </form>
+
+      <div className="border-t border-white/10 pt-4">
+        <p className="mb-3 text-xs text-muted-foreground">Development: email + password</p>
+        <form onSubmit={onPasswordSubmit} className="space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="dev-password">Password</Label>
+            <Input
+              id="dev-password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="border-white/10 bg-black/40"
+            />
+          </div>
+          {pwdError ? <p className="text-sm text-red-400">{pwdError}</p> : null}
+          <Button
+            type="submit"
+            disabled={pwdLoading}
+            variant="outline"
+            className="w-full border-white/20 bg-transparent hover:bg-white/5"
+          >
+            {pwdLoading ? "Signing in…" : "Sign in with password"}
+          </Button>
+        </form>
       </div>
-      {message ? <p className="text-sm text-red-400">{message}</p> : null}
-      <Button type="submit" disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-500">
-        {loading ? "Sending…" : "Send magic link"}
-      </Button>
-    </form>
+    </div>
   );
 }
