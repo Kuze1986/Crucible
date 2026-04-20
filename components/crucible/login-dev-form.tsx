@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { assignWindowLocationFromRedirectToSession } from "@/lib/auth/client-redirect-to";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 export function LoginDevForm() {
@@ -28,29 +29,13 @@ export function LoginDevForm() {
         return;
       }
 
-      const redirectTo = new URLSearchParams(window.location.search).get("redirect_to");
-      if (redirectTo) {
-        let raw: string;
-        try {
-          raw = decodeURIComponent(redirectTo);
-        } catch {
-          setPwdError("Invalid redirect_to");
-          return;
-        }
-        const target = new URL(raw, window.location.origin);
-        if (target.origin !== window.location.origin) {
-          if (!data.session) {
-            setPwdError("No session to transfer to the other app.");
-            return;
-          }
-          target.searchParams.set("access_token", data.session.access_token);
-          target.searchParams.set("refresh_token", data.session.refresh_token);
-          window.location.assign(target.toString());
-        } else {
-          window.location.assign(target.toString());
-        }
-      } else {
-        window.location.assign("/");
+      if (!data.session) {
+        setPwdError("No session returned.");
+        return;
+      }
+
+      if (!assignWindowLocationFromRedirectToSession(data.session)) {
+        setPwdError("Invalid redirect_to");
       }
     } catch (err) {
       setPwdError(err instanceof Error ? err.message : "Request failed");

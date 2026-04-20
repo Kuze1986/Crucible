@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { AuthProvider } from "@/components/crucible/auth-context";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,7 +30,9 @@ export default function RootLayout({
       lang="en"
       className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#0a0b0f] text-foreground font-sans">{children}</body>
+      <body className="min-h-full bg-[#0a0b0f] text-foreground font-sans">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
