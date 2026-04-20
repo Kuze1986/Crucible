@@ -10,6 +10,16 @@ function isPublicLoginPath(pathname: string): boolean {
   return pathname === "/login" || pathname === "/login/";
 }
 
+function redirectIfLoginSession(session: Session | null): void {
+  if (!session) return;
+  const rt = new URLSearchParams(window.location.search).get("redirect_to");
+  if (rt) {
+    assignWindowLocationFromRedirectToSession(session as Session);
+  } else {
+    window.location.replace("/dashboard");
+  }
+}
+
 type AuthContextValue = {
   accessHydrated: boolean;
 };
@@ -21,33 +31,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
-    async function init() {
+    void (async () => {
       if (typeof window === "undefined") return;
 
       const path = window.location.pathname;
       const supabase = createBrowserSupabaseClient();
 
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        if (isPublicLoginPath(path)) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (!cancelled) redirectIfLoginSession(session);
 
-        if (session && isPublicLoginPath(path)) {
-          assignWindowLocationFromRedirectToSession(session as Session);
-          return;
-        }
-
-        if (isPublicLoginPath(path)) return;
-
-        const rawRpc = process.env.NEXT_PUBLIC_AUTH_ACCESS_RPC;
-        const rpc =
-          rawRpc === undefined || rawRpc === null ? "get_my_access" : rawRpc.trim();
-        if (rpc === "") return;
-
-        const { error } = await supabase.rpc(rpc, {});
-        if (error && process.env.NODE_ENV === "development") {
-          console.warn("[AuthProvider]", rpc, error.message);
+          const {
+            data: { subscription },
+          } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (!isPublicLoginPath(window.location.pathname)) return;
+            redirectIfLoginSession(session);
+          });
+          unsubscribe = () => subscription.unsubscribe();
+        } else {
+          const rawRpc = process.env.NEXT_PUBLIC_AUTH_ACCESS_RPC;
+          const rpc = typeof rawRpc === "string" ? rawRpc.trim() : "";
+          if (rpc.length > 0) {
+            const { error } = await supabase.rpc(rpc, {});
+            if (error && process.env.NODE_ENV === "development") {
+              console.warn("[AuthProvider]", rpc, error.message);
+            }
+          }
         }
       } catch (e) {
         if (process.env.NODE_ENV === "development") {
@@ -56,11 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         if (!cancelled) setAccessHydrated(true);
       }
-    }
+    })();
 
-    void init();
     return () => {
       cancelled = true;
+      unsubscribe?.();
     };
   }, []);
 

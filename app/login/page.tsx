@@ -3,12 +3,13 @@ import Link from "next/link";
 import { buildNexusLoginUrl } from "@/lib/auth/nexus-login-url";
 import { resolvePublicAppUrl } from "@/lib/auth/public-origin";
 import { LoginDevForm } from "@/components/crucible/login-dev-form";
+import { NexusSignInLink } from "@/components/crucible/nexus-sign-in-link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string; redirect_to?: string }>;
 }) {
   const sp = await searchParams;
   const err = sp.error;
@@ -31,13 +32,12 @@ export default async function LoginPage({
                 {err}
               </p>
             ) : null}
-            <a
+            <NexusSignInLink
               href={nexusHref}
-              rel="noopener noreferrer"
               className="inline-flex h-10 w-full items-center justify-center rounded-md bg-indigo-600 px-4 text-sm font-medium text-white hover:bg-indigo-500"
             >
               Continue to sign in
-            </a>
+            </NexusSignInLink>
             <p className="text-center text-xs text-muted-foreground">
               <Link href="/admin/login" className="text-indigo-400 hover:underline">
                 Admin sign-in

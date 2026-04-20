@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 
 import { createServerClient } from "@supabase/ssr";
 
+import {
+  CRUCIBLE_HANDOFF_COOKIE,
+  applyExternalHandoffIfPresent,
+} from "@/lib/auth/crucible-handoff-cookie";
 import { getSiteUrl, sanitizeNextPath } from "@/lib/auth/site-url";
 
 export async function GET(request: Request) {
@@ -43,16 +47,20 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.setSession({ access_token, refresh_token });
     if (error) {
-      return NextResponse.redirect(
+      const fail = NextResponse.redirect(
         `${siteUrl}/login?error=${encodeURIComponent(error.message)}`
       );
+      fail.cookies.set(CRUCIBLE_HANDOFF_COOKIE, "", { path: "/", maxAge: 0 });
+      return fail;
     }
-    return redirectResponse;
+    return applyExternalHandoffIfPresent(siteUrl, cookieStore, supabase, redirectResponse);
   }
 
   const code = urlObj.searchParams.get("code");
   if (!code) {
-    return NextResponse.redirect(new URL("/login", siteUrl));
+    const r = NextResponse.redirect(new URL("/login", siteUrl));
+    r.cookies.set(CRUCIBLE_HANDOFF_COOKIE, "", { path: "/", maxAge: 0 });
+    return r;
   }
 
   const redirectTarget = new URL(next, siteUrl);
@@ -72,10 +80,12 @@ export async function GET(request: Request) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(
+    const fail = NextResponse.redirect(
       new URL(`/login?error=${encodeURIComponent(error.message)}`, siteUrl)
     );
+    fail.cookies.set(CRUCIBLE_HANDOFF_COOKIE, "", { path: "/", maxAge: 0 });
+    return fail;
   }
 
-  return redirectResponse;
+  return applyExternalHandoffIfPresent(siteUrl, cookieStore, supabase, redirectResponse);
 }
