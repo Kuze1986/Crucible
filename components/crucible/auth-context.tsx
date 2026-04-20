@@ -3,7 +3,6 @@
 import type { Session } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-import { assignWindowLocationFromRedirectToSession } from "@/lib/auth/client-redirect-to";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 function isPublicLoginPath(pathname: string): boolean {
@@ -12,12 +11,7 @@ function isPublicLoginPath(pathname: string): boolean {
 
 function redirectIfLoginSession(session: Session | null): void {
   if (!session) return;
-  const rt = new URLSearchParams(window.location.search).get("redirect_to");
-  if (rt) {
-    assignWindowLocationFromRedirectToSession(session as Session);
-  } else {
-    window.location.replace("/dashboard");
-  }
+  window.location.replace("/dashboard");
 }
 
 type AuthContextValue = {
