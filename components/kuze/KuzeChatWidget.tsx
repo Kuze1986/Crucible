@@ -46,7 +46,12 @@ function getKuzeUrl(): string {
   if (viteEnv?.DEV) return "/__kuze/api/chat"
 
   const nextBase = process.env.NEXT_PUBLIC_KUZE_URL?.trim().replace(/\/$/, "")
-  if (nextBase) return `${nextBase}/api/chat`
+  if (nextBase) {
+    if (nextBase.startsWith("http://") || nextBase.startsWith("https://")) {
+      return `${nextBase}/api/chat`
+    }
+    return `${nextBase}/api/chat`
+  }
 
   const viteBase = viteEnv?.VITE_KUZE_URL?.trim().replace(/\/$/, "")
   if (viteBase) return `${viteBase}/api/chat`
@@ -56,7 +61,7 @@ function getKuzeUrl(): string {
     return `${win.KUZE_URL.trim().replace(/\/$/, "")}/api/chat`
   }
 
-  return "https://ai-twin-production.up.railway.app/api/chat"
+  return "/__kuze/api/chat"
 }
 
 async function streamChat(
