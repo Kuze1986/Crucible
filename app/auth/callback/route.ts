@@ -21,17 +21,22 @@ export async function GET(request: Request) {
   const refresh_token = urlObj.searchParams.get("refresh_token");
 
   if (access_token && refresh_token) {
-    const redirectTarget = new URL(next, siteUrl);
-    const redirectResponse = NextResponse.redirect(redirectTarget);
+    const nextPath = sanitizeNextPath(urlObj.searchParams.get("next"), "/dashboard");
+    const redirectResponse = NextResponse.redirect(`${siteUrl}${nextPath}`);
+
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            redirectResponse.cookies.set(name, value, options);
-          });
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              redirectResponse.cookies.set(name, value, options);
+            });
+          } catch {
+            /* ignore */
+          }
         },
       },
     });
@@ -39,7 +44,7 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.setSession({ access_token, refresh_token });
     if (error) {
       return NextResponse.redirect(
-        new URL(`/login?error=${encodeURIComponent(error.message)}`, siteUrl)
+        `${siteUrl}/login?error=${encodeURIComponent(error.message)}`
       );
     }
     return redirectResponse;
