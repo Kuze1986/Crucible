@@ -28,3 +28,26 @@ export function isSystemProfileName(name: string): name is SystemProfileName {
 export function mergeEngineWeights(base: EngineWeights, override?: EngineWeights | null) {
   return { ...DEFAULT_ENGINE_WEIGHTS, ...base, ...override } satisfies EngineWeights;
 }
+
+export const DEMOFORGE_PROFILE_NAMES = [
+  "Engaged Prospect",
+  "Skeptical Evaluator",
+  "Distracted Buyer",
+  "High Intent Closer",
+  "Price Sensitive",
+] as const;
+
+export type DemoForgeProfileName = (typeof DEMOFORGE_PROFILE_NAMES)[number];
+
+export function isDemoForgeProfileName(name: string): name is DemoForgeProfileName {
+  return (DEMOFORGE_PROFILE_NAMES as readonly string[]).includes(name);
+}
+
+export const DEMOFORGE_ENGINE_WEIGHTS: EngineWeights = {
+  intent: 0.35,
+  emotional: 0.35,
+  defense: 0.1,
+  safety: 0.1,
+  trust: 0.25,
+  trajectory: 0.25,
+};

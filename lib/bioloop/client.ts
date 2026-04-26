@@ -1,16 +1,30 @@
+import type { BehaviorSignal } from "@/lib/crucible/types";
+
+export type CrucibleContext = {
+  target_url: string;
+  simulation_profile: string;
+  engine_weights: Record<string, number>;
+  goal: string;
+  persona_context: object | null;
+  constraints: object | null;
+};
+
+export type DemoForgeContext = {
+  session_id: string;
+  tenant_id: string;
+  kuze_mode: "ambassador" | "insider" | "operator";
+  journey_node_id: string;
+  simulation_profile: string;
+  engine_weights: Record<string, number>;
+  prospect_signals: BehaviorSignal[];
+};
+
 export type BehavioralSimulationJobBody = {
   actor_id: string;
-  product: "crucible";
-  job_type: "behavioral_simulation";
+  product: "crucible" | "demoforge";
+  job_type: "behavioral_simulation" | "session_evaluation";
   priority: number;
-  context: {
-    target_url: string;
-    simulation_profile: string;
-    engine_weights: Record<string, number>;
-    goal: string;
-    persona_context: object | null;
-    constraints: object | null;
-  };
+  context: CrucibleContext | DemoForgeContext;
   callback_url: string;
 };
 

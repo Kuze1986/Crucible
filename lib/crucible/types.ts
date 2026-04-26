@@ -120,3 +120,20 @@ export type UserSettingsRow = {
   notify_email_on_complete: boolean;
   display_name: string | null;
 };
+
+export type BehaviorSignal = {
+  signal_type: string;
+  value: number | string;
+  timestamp: string;
+  source: "hotspot" | "branch_decision" | "kuze_adaptation" | "video_event";
+};
+
+export type KuzeSessionState = {
+  session_id: string;
+  tenant_id: string;
+  engagement_trajectory: TrustTrajectory;
+  friction_points: string[];
+  recommended_pivot: string | null;
+  confidence: number;
+  updated_at: string;
+};
