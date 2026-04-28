@@ -22,8 +22,33 @@ Set `NEXT_PUBLIC_APP_URL` to the public HTTPS URL of this service so the orchest
 
 ## Auth
 
-- With `NEXT_PUBLIC_NEXUS_LOGIN_URL`, unauthenticated users are sent to Nexus SSO.
-- Without it, **development** exposes an email magic link form; production expects Nexus URL or your own IdP wiring via `auth/callback`.
+- Crucible uses direct Supabase authentication for operator sign-in.
+
+## Evaluate API
+
+- Endpoint: `POST /api/crucible/evaluate`
+- Auth header: `x-bioloop-key` (or `x-api-key`) must match `BIOLOOP_SERVICE_KEY`
+- Rate limit: in-memory, per-IP, default `20` requests/minute (configurable via `CRUCIBLE_EVALUATE_RATE_LIMIT_PER_MINUTE`)
+- Persistent audit logs: writes to `crucible.evaluate_audit_logs` (apply migration first)
+- BioLoop/output integration: writes completed evaluate events to `crucible.bioloop_output_events` and `crucible.reporting_outbox`
+- Request body:
+  - `session_id: string`
+  - `tenant_id: string`
+  - `candidate_id: string`
+  - `attempts: [6 items]` where each item is `{ persona_id, prompt, response }`
+- Response body:
+  - `composite_score: number`
+  - `personas: [6 items]` with `score`, `challenge_type`, `voice_style`, `stress_triggered`, `ok`, `error`
+  - `audit.request_hash` and `audit.timestamp`
+
+### Evaluate audit scripts
+
+- Determinism fixture check:
+  - `CRUCIBLE_URL=https://<host> BIOLOOP_SERVICE_KEY=<key> npm run audit:evaluate:consistency`
+- Weak vs strong score spot-check:
+  - `CRUCIBLE_URL=https://<host> BIOLOOP_SERVICE_KEY=<key> npm run audit:evaluate:spotcheck`
+- 10-call concurrency stress:
+  - `CRUCIBLE_URL=https://<host> BIOLOOP_SERVICE_KEY=<key> npm run audit:evaluate:stress`
 
 ## Admin
 

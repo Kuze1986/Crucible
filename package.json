@@ -9,7 +9,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "audit:evaluate:consistency": "node scripts/evaluate-consistency.mjs",
+    "audit:evaluate:stress": "node scripts/evaluate-stress.mjs",
+    "audit:evaluate:spotcheck": "node scripts/evaluate-spotcheck.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

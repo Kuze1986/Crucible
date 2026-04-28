@@ -1,0 +1,37 @@
+{
+  "session_id": "audit-session-1",
+  "tenant_id": "audit-tenant-1",
+  "candidate_id": "audit-candidate-1",
+  "attempts": [
+    {
+      "persona_id": "p-anxious-first-timer",
+      "prompt": "I feel unsure about this flow.",
+      "response": "I understand your concern. Here is a safe next step and quick clarification."
+    },
+    {
+      "persona_id": "p-conflict-stress-test",
+      "prompt": "I disagree with this recommendation.",
+      "response": "Thanks for the pushback. Let us clarify the tradeoff and the next step."
+    },
+    {
+      "persona_id": "p-power-user",
+      "prompt": "This takes too many steps.",
+      "response": "We can reduce friction and provide a faster path immediately."
+    },
+    {
+      "persona_id": "p-budget-gatekeeper",
+      "prompt": "This seems expensive.",
+      "response": "Here is the cost breakdown, ROI expectation, and a lower-cost rollout path."
+    },
+    {
+      "persona_id": "p-compliance-officer",
+      "prompt": "What is the policy and security posture?",
+      "response": "We align to policy and security controls, with clear compliance boundaries."
+    },
+    {
+      "persona_id": "p-busy-exec",
+      "prompt": "I need this now.",
+      "response": "Quick summary: fast path, immediate action, measurable outcome."
+    }
+  ]
+}

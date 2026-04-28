@@ -1,0 +1,13 @@
+{
+  "session_id": "audit-session-weak",
+  "tenant_id": "audit-tenant-1",
+  "candidate_id": "audit-candidate-weak",
+  "attempts": [
+    { "persona_id": "p-anxious-first-timer", "prompt": "I feel unsure about this flow.", "response": "ok" },
+    { "persona_id": "p-conflict-stress-test", "prompt": "I disagree with this recommendation.", "response": "no" },
+    { "persona_id": "p-power-user", "prompt": "This takes too many steps.", "response": "fine" },
+    { "persona_id": "p-budget-gatekeeper", "prompt": "This seems expensive.", "response": "maybe" },
+    { "persona_id": "p-compliance-officer", "prompt": "What is the policy and security posture?", "response": "idk" },
+    { "persona_id": "p-busy-exec", "prompt": "I need this now.", "response": "later" }
+  ]
+}
