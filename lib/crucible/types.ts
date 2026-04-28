@@ -90,6 +90,7 @@ export type SimulationRunRow = {
   ux_failure_points: UxFailurePointsDoc | null;
   session_summary: SessionSummaryDoc | null;
   exported_to_demoforge: boolean;
+  share_token: string | null;
 };
 
 export type StoryboardStepRow = {

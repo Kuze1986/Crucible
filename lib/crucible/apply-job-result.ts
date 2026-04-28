@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { randomUUID } from "node:crypto";
 
 import type {
   RunStatus,
@@ -178,6 +179,32 @@ export async function applyJobResultToRun(
   if (upErr) {
     console.error("[applyJobResult] update run", runId, upErr);
     return { applied: false, reason: upErr.message };
+  }
+
+  // Generate a public share token only for successfully completed runs.
+  if (nextStatus === "completed") {
+    try {
+      const { data: current, error: getErr } = await supabase
+        .from("simulation_runs")
+        .select("share_token")
+        .eq("id", runId)
+        .single();
+      if (getErr) {
+        console.error("[applyJobResult] get share token", runId, getErr);
+      } else if (!current?.share_token) {
+        const { error: tokenErr } = await supabase
+          .from("simulation_runs")
+          .update({ share_token: randomUUID() })
+          .eq("id", runId);
+        if (tokenErr) {
+          // Token generation should not undo completion.
+          console.error("[applyJobResult] set share token", runId, tokenErr);
+        }
+      }
+    } catch (error) {
+      // Token generation should not undo completion.
+      console.error("[applyJobResult] share token error", runId, error);
+    }
   }
 
   return { applied: true };

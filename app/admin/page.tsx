@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AdminSignOut } from "@/components/crucible/admin-sign-out";
+import { AdminSwitchMode } from "@/components/crucible/admin-switch-mode";
 import { buttonVariants } from "@/components/ui/button";
 import { adminCookieName, verifyAdminSessionToken } from "@/lib/admin/token";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,10 @@ export default async function AdminHomePage() {
           <h1 className="font-mono text-xl font-semibold tracking-tight">Operator console</h1>
           <p className="text-sm text-muted-foreground">Signed in with admin password.</p>
         </div>
-        <AdminSignOut />
+        <div className="flex flex-wrap gap-2">
+          <AdminSwitchMode />
+          <AdminSignOut />
+        </div>
       </header>
       <ul className="space-y-3 text-sm text-muted-foreground">
         <li>

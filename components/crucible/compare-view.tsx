@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -18,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/components/ui/use-toast";
 
 import type { SimulationRunRow, StoryboardStepRow } from "@/lib/crucible/types";
 
@@ -25,6 +25,8 @@ type Loaded = { run: SimulationRunRow; steps: StoryboardStepRow[] };
 
 export function CompareView() {
   const sp = useSearchParams();
+  const { toast } = useToast();
+  const embed = sp.get("embed") === "1";
   const initial = useMemo(() => {
     const raw = sp.get("ids") ?? "";
     return raw
@@ -41,6 +43,14 @@ export function CompareView() {
   useEffect(() => {
     setIds(initial);
   }, [initial]);
+
+  useEffect(() => {
+    if (!embed) return;
+    document.body.classList.add("compare-embed");
+    return () => {
+      document.body.classList.remove("compare-embed");
+    };
+  }, [embed]);
 
   useEffect(() => {
     void (async () => {
@@ -72,13 +82,30 @@ export function CompareView() {
   }, [runs]);
 
   const maxSteps = Math.max(0, ...runs.map((r) => r.steps.length));
+  const shareUrl = useMemo(() => {
+    const base = typeof window !== "undefined" ? window.location.origin : "";
+    return `${base}/compare?ids=${ids.join(",")}`;
+  }, [ids]);
+
+  async function copyShareUrl() {
+    await navigator.clipboard.writeText(shareUrl);
+    toast({ title: "Copied share URL" });
+  }
+
+  async function copyEmbedCode() {
+    const code = `<iframe src="${shareUrl}" width="100%" height="900" frameborder="0" allowfullscreen></iframe>`;
+    await navigator.clipboard.writeText(code);
+    toast({ title: "Copied embed code" });
+  }
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-mono text-2xl font-semibold tracking-tight">Comparison</h1>
-        <p className="text-sm text-muted-foreground">Up to four runs side by side.</p>
-      </header>
+      {!embed ? (
+        <header>
+          <h1 className="font-mono text-2xl font-semibold tracking-tight">Comparison</h1>
+          <p className="text-sm text-muted-foreground">Up to four runs side by side.</p>
+        </header>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {ids.map((id) => (
           <Button
@@ -112,12 +139,24 @@ export function CompareView() {
         >
           Add run
         </Button>
-        <Link
-          href={`/compare?ids=${ids.join(",")}`}
+        <Button
+          type="button"
+          variant="outline"
+          disabled={ids.length === 0}
           className={cn(buttonVariants({ variant: "outline" }), "border-white/10")}
+          onClick={() => void copyShareUrl()}
         >
           Share URL
-        </Link>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={ids.length === 0}
+          className={cn(buttonVariants({ variant: "outline" }), "border-white/10")}
+          onClick={() => void copyEmbedCode()}
+        >
+          Embed
+        </Button>
       </div>
 
       <section>
@@ -215,6 +254,22 @@ export function CompareView() {
           ))}
         </div>
       </section>
+      {embed ? (
+        <style jsx global>{`
+          body.compare-embed aside {
+            display: none !important;
+          }
+          body.compare-embed main {
+            width: 100% !important;
+            border: none !important;
+            border-radius: 0 !important;
+            padding: 1rem !important;
+          }
+          body.compare-embed > div > div:last-child {
+            display: none !important;
+          }
+        `}</style>
+      ) : null}
     </div>
   );
 }

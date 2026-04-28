@@ -19,16 +19,18 @@ const nav = [
   { href: "/dashboard", label: "Command Center", icon: LayoutDashboard },
   { href: "/builder", label: "New simulation", icon: Bot },
   { href: "/library", label: "Library", icon: FolderKanban },
-  { href: "/profiles", label: "Profiles", icon: Users },
-  { href: "/compare", label: "Compare", icon: BarChart3 },
+  { href: "/profiles", label: "Profiles", icon: Users, advanced: true },
+  { href: "/compare", label: "Compare", icon: BarChart3, advanced: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export async function AppChrome({
   user,
+  hasCompletedRun,
   children,
 }: {
   user: User;
+  hasCompletedRun: boolean;
   children: React.ReactNode;
 }) {
   async function signOut() {
@@ -54,7 +56,9 @@ export async function AppChrome({
         </div>
         <div className="px-3 py-3">
           <nav className="grid grid-cols-2 gap-1 md:grid-cols-1">
-            {nav.map((item) => (
+            {nav
+              .filter((item) => !item.advanced || hasCompletedRun)
+              .map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -66,7 +70,7 @@ export async function AppChrome({
                 <item.icon className="size-4 text-cyan-300/90" />
                 {item.label}
               </Link>
-            ))}
+              ))}
           </nav>
         </div>
         <div className="hidden border-t border-white/10 px-3 pb-4 pt-3 text-xs text-white/70 md:block">

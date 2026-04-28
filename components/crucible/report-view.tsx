@@ -11,6 +11,7 @@ import { StoryboardStepRowView } from "@/components/crucible/storyboard-step-row
 import { TrustBadge } from "@/components/crucible/trust-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { buildEmbedUrl, buildShareUrl } from "@/lib/crucible/share";
 import {
   Table,
   TableBody,
@@ -35,6 +36,8 @@ export function ReportView() {
   const [run, setRun] = useState<SimulationRunRow | null>(null);
   const [steps, setSteps] = useState<StoryboardStepRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState<"" | "share" | "embed">("");
+  const [embedSnippet, setEmbedSnippet] = useState("");
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -84,6 +87,24 @@ export function ReportView() {
     alert("Marked as exported to DemoForge.");
   }
 
+  async function copyShareUrl() {
+    if (!run?.share_token) return;
+    const url = buildShareUrl(run.share_token);
+    await navigator.clipboard.writeText(url);
+    setCopied("share");
+    setTimeout(() => setCopied(""), 1500);
+  }
+
+  async function copyEmbedSnippet() {
+    if (!run?.share_token) return;
+    const embedUrl = buildEmbedUrl(run.share_token);
+    const snippet = `<iframe src="${embedUrl}" width="100%" height="800" frameborder="0"></iframe>`;
+    await navigator.clipboard.writeText(snippet);
+    setEmbedSnippet(snippet);
+    setCopied("embed");
+    setTimeout(() => setCopied(""), 1500);
+  }
+
   if (!id) return <p className="text-sm text-muted-foreground">Missing run id.</p>;
   if (loading || !run) return <p className="text-sm text-muted-foreground">Loading…</p>;
 
@@ -122,8 +143,26 @@ export function ReportView() {
           >
             Rerun
           </Link>
+          {run.share_token ? (
+            <>
+              <Button size="sm" variant="outline" className="border-white/10" onClick={() => void copyShareUrl()}>
+                Share
+              </Button>
+              <Button size="sm" variant="outline" className="border-white/10" onClick={() => void copyEmbedSnippet()}>
+                Embed
+              </Button>
+            </>
+          ) : null}
         </div>
       </header>
+      {copied ? (
+        <p className="text-xs text-emerald-300">{copied === "share" ? "Copied share URL!" : "Copied embed snippet!"}</p>
+      ) : null}
+      {embedSnippet ? (
+        <pre className="overflow-x-auto rounded border border-white/10 bg-[#0f1117] p-3 text-xs text-muted-foreground">
+          {embedSnippet}
+        </pre>
+      ) : null}
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <ScoreCard

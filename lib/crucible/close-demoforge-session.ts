@@ -1,4 +1,5 @@
 import type { BehaviorSignal, TrustTrajectory } from "@/lib/crucible/types";
+import { randomUUID } from "node:crypto";
 import { createServiceSupabaseCrucible } from "@/lib/supabase/server";
 
 type CloseDemoForgeSessionInput = {
@@ -43,6 +44,7 @@ export async function closeDemoForgeSession({
       experience_score: scores.experience_score,
       trust_trajectory: scores.trust_trajectory,
       exported_to_demoforge: true,
+      share_token: randomUUID(),
       persona_context: {
         description: `Live DemoForge prospect session via Kuze ${kuzeMode}`,
       },

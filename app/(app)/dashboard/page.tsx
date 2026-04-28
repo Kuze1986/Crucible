@@ -53,6 +53,7 @@ export default async function DashboardPage() {
 
   const list = (runs ?? []) as SimulationRunRow[];
   const completed = list.filter((r) => r.status === "completed");
+  const hasCompleted = completed.length > 0;
   const avgConflict =
     completed.length && completed.some((r) => r.overall_conflict_score != null)
       ? completed.reduce((a, r) => a + (Number(r.overall_conflict_score) || 0), 0) /
@@ -78,25 +79,57 @@ export default async function DashboardPage() {
           >
             New Simulation
           </Link>
-          <Link
-            href="/library"
-            className={cn(buttonVariants({ variant: "outline" }), "border-white/10")}
-          >
-            Library
-          </Link>
+          {hasCompleted ? (
+            <Link
+              href="/library"
+              className={cn(buttonVariants({ variant: "outline" }), "border-white/10")}
+            >
+              Library
+            </Link>
+          ) : null}
         </div>
       </header>
 
       {list.length === 0 ? (
-        <EmptyState
-          icon={FlaskConical}
-          title="No simulations yet"
-          description="Launch your first behavioral simulation against a target URL."
-          actionLabel="New Simulation"
-          actionHref="/builder"
-        />
+        <div className="space-y-5">
+          <EmptyState
+            icon={FlaskConical}
+            title="Run your first simulation"
+            description="Run your first simulation — paste a URL or upload content to begin."
+            actionLabel="Start First Run"
+            actionHref="/builder"
+          />
+          <section className="rounded-lg border border-white/10 bg-[#0f1117] p-4">
+            <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+              Guided first run flow
+            </h2>
+            <ol className="mt-3 space-y-2 text-sm text-white/85">
+              <li>1. Choose what you are testing: URL, text, or pitch deck.</li>
+              <li>2. Pick a system profile (preselected) and keep defaults.</li>
+              <li>3. Launch the gauntlet and review the first results.</li>
+            </ol>
+          </section>
+        </div>
       ) : (
         <>
+          {completed.length === 1 ? (
+            <section className="rounded-lg border border-cyan-300/30 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 p-4">
+              <p className="text-xs uppercase tracking-wide text-cyan-300">First result unlocked</p>
+              <h2 className="mt-1 text-xl font-semibold text-white">
+                Here&apos;s what your 6-persona gauntlet found.
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Conflict Score reveal:{" "}
+                <span className="font-mono text-white">{num(completed[0]?.overall_conflict_score)}</span>
+              </p>
+              <Link
+                className="mt-3 inline-flex text-sm text-indigo-300 hover:text-indigo-200"
+                href={`/report?id=${completed[0]?.id}`}
+              >
+                View your first gauntlet report →
+              </Link>
+            </section>
+          ) : null}
           <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="Total runs" value={String(list.length)} />
             <Stat label="Completed" value={String(completed.length)} />

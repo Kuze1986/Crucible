@@ -15,5 +15,13 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
     redirect("/login");
   }
 
-  return <AppChrome user={user}>{children}</AppChrome>;
+  const { data: firstCompleted } = await supabase
+    .from("simulation_runs")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("status", "completed")
+    .limit(1)
+    .maybeSingle();
+
+  return <AppChrome user={user} hasCompletedRun={Boolean(firstCompleted?.id)}>{children}</AppChrome>;
 }
