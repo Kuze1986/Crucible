@@ -35,7 +35,18 @@ const calls = Array.from({ length: concurrency }, async (_, idx) => {
 const results = await Promise.all(calls);
 const ok = results.filter((r) => r.status === 200).length;
 const non200 = results.filter((r) => r.status !== 200);
-const p95 = [...results.map((r) => r.elapsedMs)].sort((a, b) => a - b)[Math.floor(results.length * 0.95) - 1] ?? 0;
+const sortedMs = [...results.map((r) => r.elapsedMs)].sort((a, b) => a - b);
+
+/** Nearest-rank style quantile in [0,1], inclusive of slow tail. */
+function quantileMs(sorted, q) {
+  if (sorted.length === 0) return 0;
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(q * sorted.length) - 1));
+  return sorted[idx];
+}
+
+const p50_ms = quantileMs(sortedMs, 0.5);
+const p95_ms = quantileMs(sortedMs, 0.95);
+const p99_ms = quantileMs(sortedMs, 0.99);
 
 console.log(
   JSON.stringify(
@@ -44,7 +55,9 @@ console.log(
       concurrency,
       ok,
       failed: non200.length,
-      p95_ms: p95,
+      p50_ms,
+      p95_ms,
+      p99_ms,
       failures: non200.slice(0, 3),
     },
     null,

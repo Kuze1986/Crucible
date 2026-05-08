@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "audit:evaluate:consistency": "node scripts/evaluate-consistency.mjs",
     "audit:evaluate:stress": "node scripts/evaluate-stress.mjs",
     "audit:evaluate:spotcheck": "node scripts/evaluate-spotcheck.mjs"

@@ -1,13 +1,14 @@
 import type { EvaluateResponse } from "@/lib/crucible/evaluate";
 import { createServiceSupabaseCrucible } from "@/lib/supabase/server";
 
+/** Persists evaluate result to BioLoop tables. Returns false if nothing durable was written. */
 export async function writeEvaluationOutputEvent(input: {
   sessionId: string;
   tenantId: string;
   candidateId: string;
   requestHash: string;
   response: EvaluateResponse;
-}) {
+}): Promise<boolean> {
   try {
     const supabase = createServiceSupabaseCrucible();
     const { data, error } = await supabase
@@ -25,7 +26,7 @@ export async function writeEvaluationOutputEvent(input: {
 
     if (error || !data?.id) {
       console.error("[crucible.evaluate] output event insert failed", error);
-      return;
+      return false;
     }
 
     const { error: outboxError } = await supabase.from("reporting_outbox").insert({
@@ -38,8 +39,16 @@ export async function writeEvaluationOutputEvent(input: {
 
     if (outboxError) {
       console.error("[crucible.evaluate] outbox insert failed", outboxError);
+      const { error: deleteError } = await supabase.from("bioloop_output_events").delete().eq("id", data.id);
+      if (deleteError) {
+        console.error("[crucible.evaluate] failed to roll back output event after outbox failure", deleteError);
+      }
+      return false;
     }
+
+    return true;
   } catch (error) {
     console.error("[crucible.evaluate] output event error", error);
+    return false;
   }
 }

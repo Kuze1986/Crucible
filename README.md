@@ -16,6 +16,8 @@ Behavioral simulation platform for NEXUS Holdings. Operators configure personas 
 2. Apply SQL in [`supabase/migrations/`](supabase/migrations/) to the nexus-core project (SQL editor or Supabase CLI).
 3. `npm install` then `npm run dev`.
 
+Typecheck: `npm run typecheck` (or `pnpm run typecheck`).
+
 ## Railway
 
 Set `NEXT_PUBLIC_APP_URL` to the public HTTPS URL of this service so the orchestrator can call `POST /api/crucible/callback`. Configure Supabase and BioLoop keys in Railway variables.
@@ -26,11 +28,13 @@ Set `NEXT_PUBLIC_APP_URL` to the public HTTPS URL of this service so the orchest
 
 ## Evaluate API
 
-- Endpoint: `POST /api/crucible/evaluate`
+- Endpoint: `POST /api/crucible/evaluate` (supports `OPTIONS` preflight for browser clients)
 - Auth header: `x-bioloop-key` (or `x-api-key`) must match `BIOLOOP_SERVICE_KEY`
+- **Service-to-service:** server-side callers (Keystone, Scripta, orchestrator, etc.) should send the shared key header on each `POST`. No cookies or browser session are involved.
+- **Browser / cross-origin:** CORS is applied on this route. If `CRUCIBLE_EVALUATE_CORS_ORIGINS` is unset, `Access-Control-Allow-Origin: *` is sent when the request includes an `Origin` header. Set `CRUCIBLE_EVALUATE_CORS_ORIGINS` to a comma-separated allowlist (or `*`) to tighten or override.
 - Rate limit: in-memory, per-IP, default `20` requests/minute (configurable via `CRUCIBLE_EVALUATE_RATE_LIMIT_PER_MINUTE`)
 - Persistent audit logs: writes to `crucible.evaluate_audit_logs` (apply migration first)
-- BioLoop/output integration: writes completed evaluate events to `crucible.bioloop_output_events` and `crucible.reporting_outbox`
+- BioLoop/output integration: writes completed evaluate events to `crucible.bioloop_output_events` and `crucible.reporting_outbox`. If the outbox insert fails after the event insert, the event row is rolled back (no orphaned event). The HTTP response still returns `200` with scores, `audit.degraded: true`, and the evaluate audit log row may set `error_message` to `BioLoop output persistence failed` so operators can retry or alert.
 - Request body:
   - `session_id: string`
   - `tenant_id: string`
@@ -39,7 +43,7 @@ Set `NEXT_PUBLIC_APP_URL` to the public HTTPS URL of this service so the orchest
 - Response body:
   - `composite_score: number`
   - `personas: [6 items]` with `score`, `challenge_type`, `voice_style`, `stress_triggered`, `ok`, `error`
-  - `audit.request_hash` and `audit.timestamp`
+  - `audit.request_hash`, `audit.timestamp`, and `audit.degraded` (true if any persona failed **or** BioLoop/outbox persistence failed)
 
 ### Evaluate audit scripts
 
