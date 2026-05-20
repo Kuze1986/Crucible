@@ -9,6 +9,8 @@ const PatchSettingsSchema = z.object({
   demoforge_export_enabled: z.boolean().optional(),
   notify_email_on_complete: z.boolean().optional(),
   display_name: z.string().optional().nullable(),
+  webhook_url: z.union([z.string().url(), z.null()]).optional(),
+  webhook_secret: z.union([z.string().min(1), z.null()]).optional(),
 });
 
 export async function GET() {
@@ -30,6 +32,7 @@ export async function GET() {
     ? {
         ...data,
         orchestrator_api_key: maskSecret(data.orchestrator_api_key as string | null),
+        webhook_secret: maskSecret((data as Record<string, unknown>).webhook_secret as string | null),
       }
     : null;
 
@@ -75,6 +78,9 @@ export async function PATCH(request: Request) {
   if (!("orchestrator_api_key" in incoming)) {
     delete row.orchestrator_api_key;
   }
+  if (!("webhook_secret" in incoming)) {
+    delete row.webhook_secret;
+  }
 
   const { data, error } = await session.supabase
     .from("user_settings")
@@ -91,6 +97,7 @@ export async function PATCH(request: Request) {
     settings: {
       ...data,
       orchestrator_api_key: maskSecret(data.orchestrator_api_key as string | null),
+      webhook_secret: maskSecret((data as Record<string, unknown>).webhook_secret as string | null),
     },
   });
 }

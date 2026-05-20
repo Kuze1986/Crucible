@@ -45,13 +45,34 @@ export function MonitorView() {
     void load();
   }, [load]);
 
-  const pollStatus = run?.status;
+  const runStatus = run?.status;
   useEffect(() => {
-    if (!id || !pollStatus) return;
-    if (pollStatus !== "queued" && pollStatus !== "running") return;
-    const t = setInterval(() => void load(), 3000);
-    return () => clearInterval(t);
-  }, [id, pollStatus, load]);
+    if (!id || !runStatus) return;
+    if (runStatus !== "queued" && runStatus !== "running") return;
+
+    const es = new EventSource(`/api/crucible/runs/${id}/events`);
+
+    es.onmessage = (e: MessageEvent<string>) => {
+      try {
+        const data = JSON.parse(e.data) as Partial<SimulationRunRow>;
+        setRun((prev) => (prev ? { ...prev, ...data } : prev));
+        if (data.status === "completed" || data.status === "failed") {
+          es.close();
+          void load();
+        }
+      } catch {
+        // ignore malformed events
+      }
+    };
+
+    es.onerror = () => {
+      es.close();
+    };
+
+    return () => {
+      es.close();
+    };
+  }, [id, runStatus, load]);
 
   async function cancel() {
     if (!id) return;

@@ -138,3 +138,42 @@ export type KuzeSessionState = {
   confidence: number;
   updated_at: string;
 };
+
+export type NotificationRow = {
+  id: string;
+  created_at: string;
+  user_id: string;
+  type: "run_complete" | "run_failed" | "system";
+  run_id: string | null;
+  title: string;
+  body: string | null;
+  read_at: string | null;
+};
+
+export type OrgRole = "owner" | "admin" | "member";
+
+export type OrganizationRow = {
+  id: string;
+  created_at: string;
+  name: string;
+  slug: string;
+  owner_id: string;
+};
+
+export type OrgMemberRow = {
+  org_id: string;
+  user_id: string;
+  role: OrgRole;
+  joined_at: string;
+};
+
+export type OrgInviteRow = {
+  id: string;
+  created_at: string;
+  org_id: string;
+  email: string;
+  role: "admin" | "member";
+  token: string;
+  accepted_at: string | null;
+  expires_at: string;
+};

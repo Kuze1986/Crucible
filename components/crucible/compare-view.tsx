@@ -10,6 +10,13 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -20,6 +27,21 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 
 import type { SimulationRunRow, StoryboardStepRow } from "@/lib/crucible/types";
+
+type SignalKey =
+  | "intent_alignment"
+  | "conflict_score"
+  | "emotional_signal"
+  | "trust_delta"
+  | "experience_score";
+
+const SIGNALS: { key: SignalKey; label: string; higherIsBetter: boolean }[] = [
+  { key: "intent_alignment", label: "Intent", higherIsBetter: true },
+  { key: "conflict_score", label: "Conflict", higherIsBetter: false },
+  { key: "emotional_signal", label: "Emotional", higherIsBetter: true },
+  { key: "trust_delta", label: "Trust Δ", higherIsBetter: true },
+  { key: "experience_score", label: "Exp", higherIsBetter: true },
+];
 
 type Loaded = { run: SimulationRunRow; steps: StoryboardStepRow[] };
 
@@ -39,6 +61,7 @@ export function CompareView() {
   const [ids, setIds] = useState<string[]>(initial);
   const [addId, setAddId] = useState("");
   const [runs, setRuns] = useState<Loaded[]>([]);
+  const [baselineIndex, setBaselineIndex] = useState(0);
 
   useEffect(() => {
     setIds(initial);
@@ -233,25 +256,61 @@ export function CompareView() {
       </section>
 
       <section>
-        <h2 className="mb-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
-          Storyboard diff
-        </h2>
-        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-          {runs.map((r) => (
-            <div key={r.run.id} className="rounded border border-white/10 bg-[#0f1117] p-2">
-              <div className="mb-2 text-xs font-medium">{r.run.title}</div>
-              <div className="max-h-96 space-y-1 overflow-auto text-[10px]">
-                {Array.from({ length: maxSteps }).map((_, i) => {
-                  const s = r.steps[i];
-                  return (
-                    <div key={i} className="rounded bg-black/30 px-1 py-0.5 font-mono text-muted-foreground">
-                      {s ? `${s.step_number} ${s.action}` : "—"}
-                    </div>
-                  );
-                })}
-              </div>
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+            Storyboard diff
+          </h2>
+          {runs.length > 1 ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Baseline:</span>
+              <Select
+                value={String(baselineIndex)}
+                onValueChange={(v) => setBaselineIndex(Number(v))}
+              >
+                <SelectTrigger className="h-7 w-48 border-white/10 bg-black/30 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {runs.map((r, i) => (
+                    <SelectItem key={r.run.id} value={String(i)}>
+                      {r.run.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          ))}
+          ) : null}
+        </div>
+        <div
+          className="grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${Math.max(1, runs.length)}, minmax(0, 1fr))` }}
+        >
+          {runs.map((r, ri) => {
+            const baseline = runs[baselineIndex];
+            const isBaseline = ri === baselineIndex;
+            return (
+              <div key={r.run.id} className="rounded border border-white/10 bg-[#0f1117] p-2">
+                <div className="mb-2 flex items-center gap-1.5 text-xs font-medium">
+                  {isBaseline ? (
+                    <span className="rounded border border-indigo-500/40 px-1 py-0.5 text-[9px] text-indigo-300">
+                      baseline
+                    </span>
+                  ) : null}
+                  {r.run.title}
+                </div>
+                <div className="max-h-[32rem] space-y-1.5 overflow-auto">
+                  {Array.from({ length: maxSteps }).map((_, i) => (
+                    <StepDiffCell
+                      key={i}
+                      step={r.steps[i]}
+                      baseline={baseline?.steps[i]}
+                      isBaseline={isBaseline}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
       {embed ? (
@@ -290,6 +349,70 @@ function MetricRow({
         <TableCell key={r.run.id}>{render(r)}</TableCell>
       ))}
     </TableRow>
+  );
+}
+
+function StepDiffCell({
+  step,
+  baseline,
+  isBaseline,
+}: {
+  step: StoryboardStepRow | undefined;
+  baseline: StoryboardStepRow | undefined;
+  isBaseline: boolean;
+}) {
+  if (!step) {
+    return (
+      <div className="rounded bg-black/20 px-2 py-1 font-mono text-[10px] text-muted-foreground/30">
+        —
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded bg-black/30 px-2 py-1.5 text-[10px]">
+      <div className="mb-1 font-mono font-medium text-muted-foreground">
+        <span className="text-white/40">{step.step_number}</span>{" "}
+        <span className="text-white/70">{step.action}</span>
+        {step.status === "failed" ? (
+          <span className="ml-1 text-red-400">✗</span>
+        ) : null}
+      </div>
+      <div className="space-y-0.5">
+        {SIGNALS.map(({ key, label, higherIsBetter }) => {
+          const raw = step[key];
+          const baseRaw = baseline?.[key];
+          const val = raw != null ? Number(raw) : null;
+          const baseVal = baseRaw != null ? Number(baseRaw) : null;
+          const delta =
+            !isBaseline && val != null && baseVal != null ? val - baseVal : null;
+          const improved = delta != null && (higherIsBetter ? delta > 0.005 : delta < -0.005);
+          const degraded = delta != null && (higherIsBetter ? delta < -0.005 : delta > 0.005);
+
+          return (
+            <div key={key} className="flex items-center gap-1">
+              <span className="w-14 shrink-0 text-muted-foreground/60">{label}</span>
+              <span className="font-mono text-white/70">{val != null ? val.toFixed(2) : "—"}</span>
+              {delta != null ? (
+                <span
+                  className={cn(
+                    "font-mono text-[9px]",
+                    improved
+                      ? "text-green-400"
+                      : degraded
+                        ? "text-red-400"
+                        : "text-muted-foreground/40"
+                  )}
+                >
+                  {delta >= 0 ? "+" : ""}
+                  {delta.toFixed(2)}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

@@ -15,6 +15,8 @@ export function SettingsForm({ email }: { email: string }) {
   const [demoforgeOn, setDemoforgeOn] = useState(false);
   const [notify, setNotify] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [testOk, setTestOk] = useState<boolean | null>(null);
 
@@ -30,6 +32,8 @@ export function SettingsForm({ email }: { email: string }) {
           demoforge_export_enabled?: boolean;
           notify_email_on_complete?: boolean;
           display_name?: string | null;
+          webhook_url?: string | null;
+          webhook_secret?: string | null;
         } | null;
       };
       const s = j.settings;
@@ -39,6 +43,7 @@ export function SettingsForm({ email }: { email: string }) {
       setDemoforgeOn(!!s.demoforge_export_enabled);
       setNotify(!!s.notify_email_on_complete);
       setDisplayName(s.display_name ?? "");
+      setWebhookUrl(s.webhook_url ?? "");
     })();
   }, []);
 
@@ -52,6 +57,8 @@ export function SettingsForm({ email }: { email: string }) {
       display_name: displayName.trim() ? displayName.trim() : null,
     };
     if (orchKey.trim()) payload.orchestrator_api_key = orchKey.trim();
+    payload.webhook_url = webhookUrl.trim() ? webhookUrl.trim() : null;
+    if (webhookSecret.trim()) payload.webhook_secret = webhookSecret.trim();
 
     const res = await fetch("/api/crucible/settings", {
       method: "PATCH",
@@ -61,6 +68,7 @@ export function SettingsForm({ email }: { email: string }) {
     if (!res.ok) setMsg("Save failed");
     else setMsg("Saved.");
     setOrchKey("");
+    setWebhookSecret("");
   }
 
   async function testConnection() {
@@ -146,6 +154,35 @@ export function SettingsForm({ email }: { email: string }) {
             <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
             Email on simulation complete
           </label>
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/10 bg-[#0f1117]">
+        <CardHeader>
+          <CardTitle>Webhooks</CardTitle>
+          <CardDescription>Receive a POST when a simulation completes.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <Label>Webhook URL</Label>
+            <Input
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              placeholder="https://example.com/webhook"
+              className="border-white/10 bg-black/30"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Webhook secret</Label>
+            <Input
+              type="password"
+              value={webhookSecret}
+              onChange={(e) => setWebhookSecret(e.target.value)}
+              placeholder="Leave blank to keep stored secret"
+              className="border-white/10 bg-black/30"
+            />
+            <p className="text-xs text-muted-foreground">Used to sign payloads via X-Crucible-Signature (HMAC-SHA256).</p>
+          </div>
         </CardContent>
       </Card>
 

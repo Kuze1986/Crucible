@@ -5,6 +5,27 @@ import { getEffectiveOrchestratorConfig } from "@/lib/crucible/orchestrator-conf
 import { createBehavioralSimulationJob } from "@/lib/bioloop/client";
 import { requireSessionUser } from "@/app/api/crucible/_auth";
 
+// ── GET schema ────────────────────────────────────────────────────────────────
+
+const GetRunsSchema = z.object({
+  status: z.enum(["queued", "running", "completed", "failed"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  page_size: z.coerce.number().int().min(1).max(100).default(25),
+  profile: z.string().optional(),
+  sort: z.enum(["created", "conflict", "goal"]).default("created"),
+  date_from: z.string().optional(),
+  date_to: z.string().optional(),
+  score_conflict_min: z.coerce.number().min(0).max(1).optional(),
+  score_conflict_max: z.coerce.number().min(0).max(1).optional(),
+  score_goal_min: z.coerce.number().min(0).max(1).optional(),
+  score_goal_max: z.coerce.number().min(0).max(1).optional(),
+  q: z.string().optional(),
+  format: z.enum(["json", "csv"]).default("json"),
+  org_id: z.string().uuid().optional(),
+});
+
+// ── POST schema ───────────────────────────────────────────────────────────────
+
 const PostRunSchema = z.object({
   title: z.string().min(1),
   target_url: z.string().url(),
@@ -22,32 +43,133 @@ const PostRunSchema = z.object({
     })
     .optional()
     .nullable(),
+  org_id: z.string().uuid().optional().nullable(),
 });
+
+// ── CSV helpers ───────────────────────────────────────────────────────────────
+
+const CSV_COLS = [
+  "id",
+  "title",
+  "target_url",
+  "simulation_profile",
+  "status",
+  "overall_conflict_score",
+  "goal_completion_score",
+  "experience_score",
+  "trust_trajectory",
+  "created_at",
+  "completed_at",
+  "duration_seconds",
+] as const;
+
+function toCsv(rows: Record<string, unknown>[]): string {
+  const header = CSV_COLS.join(",");
+  const body = rows
+    .map((r) =>
+      CSV_COLS.map((c) => {
+        const v = r[c] ?? "";
+        const s = String(v);
+        return s.includes(",") || s.includes('"') || s.includes("\n")
+          ? `"${s.replace(/"/g, '""')}"`
+          : s;
+      }).join(",")
+    )
+    .join("\n");
+  return header + "\n" + body;
+}
+
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
   const session = await requireSessionUser();
   if ("error" in session) return session.error;
 
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get("status");
+  const parsed = GetRunsSchema.safeParse(Object.fromEntries(searchParams));
+  if (!parsed.success) {
+    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const p = parsed.data;
+  const isCsv = p.format === "csv";
+
+  if (p.org_id) {
+    const { data: membership } = await session.supabase
+      .from("org_members")
+      .select("user_id")
+      .eq("org_id", p.org_id)
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+    if (!membership) {
+      return Response.json({ error: "Not a member of this org" }, { status: 403 });
+    }
+  }
 
   let q = session.supabase
     .from("simulation_runs")
-    .select("*")
-    .eq("user_id", session.user.id)
-    .order("created_at", { ascending: false });
+    .select("*", { count: "exact" });
 
-  if (status && ["queued", "running", "completed", "failed"].includes(status)) {
-    q = q.eq("status", status);
+  if (p.org_id) {
+    q = q.eq("org_id", p.org_id);
+  } else {
+    q = q.eq("user_id", session.user.id);
   }
 
-  const { data, error } = await q;
+  if (p.status) q = q.eq("status", p.status);
+  if (p.profile) q = q.eq("simulation_profile", p.profile);
+  if (p.q) q = q.ilike("title", `%${p.q}%`);
+  if (p.date_from) q = q.gte("created_at", p.date_from);
+  if (p.date_to) q = q.lte("created_at", `${p.date_to}T23:59:59.999Z`);
+  if (p.score_conflict_min != null) q = q.gte("overall_conflict_score", p.score_conflict_min);
+  if (p.score_conflict_max != null) q = q.lte("overall_conflict_score", p.score_conflict_max);
+  if (p.score_goal_min != null) q = q.gte("goal_completion_score", p.score_goal_min);
+  if (p.score_goal_max != null) q = q.lte("goal_completion_score", p.score_goal_max);
+
+  const orderCol =
+    p.sort === "conflict"
+      ? "overall_conflict_score"
+      : p.sort === "goal"
+        ? "goal_completion_score"
+        : "created_at";
+
+  if (isCsv) {
+    const { data, error } = await q
+      .order(orderCol, { ascending: false, nullsFirst: false })
+      .limit(10_000);
+    if (error) {
+      console.error("[GET runs csv]", error);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+    return new Response(toCsv((data ?? []) as Record<string, unknown>[]), {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": 'attachment; filename="crucible-runs.csv"',
+      },
+    });
+  }
+
+  const from = (p.page - 1) * p.page_size;
+  const to = from + p.page_size - 1;
+
+  const { data, error, count } = await q
+    .order(orderCol, { ascending: false, nullsFirst: false })
+    .range(from, to);
+
   if (error) {
     console.error("[GET runs]", error);
     return Response.json({ error: error.message }, { status: 500 });
   }
-  return Response.json({ runs: data ?? [] });
+
+  return Response.json({
+    runs: data ?? [],
+    total: count ?? 0,
+    page: p.page,
+    page_size: p.page_size,
+  });
 }
+
+// ── POST ──────────────────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
   const session = await requireSessionUser();
@@ -90,6 +212,7 @@ export async function POST(request: Request) {
     persona_context: p.persona_context ?? null,
     constraints: p.constraints ?? null,
     status: "queued" as const,
+    org_id: p.org_id ?? null,
   };
 
   const { data: run, error: insErr } = await session.supabase
@@ -154,7 +277,9 @@ export async function POST(request: Request) {
       console.error("[POST runs] update job id", upErr);
       return Response.json({ error: upErr.message, run }, { status: 500 });
     }
-    return Response.json({ run: updated ?? { ...run, orchestrator_run_id: job.job_id, status: "running" } });
+    return Response.json({
+      run: updated ?? { ...run, orchestrator_run_id: job.job_id, status: "running" },
+    });
   } catch (e) {
     console.error("[POST runs] orchestrator", e);
     await session.supabase

@@ -124,7 +124,7 @@ export function ReportView() {
             ) : null}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="no-print flex flex-wrap gap-2">
           <Button size="sm" variant="outline" className="border-white/10" onClick={() => void exportDemoForge()}>
             Export to DemoForge
           </Button>
@@ -153,13 +153,21 @@ export function ReportView() {
               </Button>
             </>
           ) : null}
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-white/10"
+            onClick={() => window.print()}
+          >
+            Print / PDF
+          </Button>
         </div>
       </header>
       {copied ? (
-        <p className="text-xs text-emerald-300">{copied === "share" ? "Copied share URL!" : "Copied embed snippet!"}</p>
+        <p className="no-print text-xs text-emerald-300">{copied === "share" ? "Copied share URL!" : "Copied embed snippet!"}</p>
       ) : null}
       {embedSnippet ? (
-        <pre className="overflow-x-auto rounded border border-white/10 bg-[#0f1117] p-3 text-xs text-muted-foreground">
+        <pre className="no-print overflow-x-auto rounded border border-white/10 bg-[#0f1117] p-3 text-xs text-muted-foreground">
           {embedSnippet}
         </pre>
       ) : null}

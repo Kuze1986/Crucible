@@ -15,13 +15,37 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
     redirect("/login");
   }
 
-  const { data: firstCompleted } = await supabase
-    .from("simulation_runs")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("status", "completed")
-    .limit(1)
-    .maybeSingle();
+  const [{ data: firstCompleted }, { count: unreadCount }, { data: orgMemberships }] = await Promise.all([
+    supabase
+      .from("simulation_runs")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "completed")
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("read_at", null),
+    supabase
+      .from("org_members")
+      .select("organizations(id,name,slug)")
+      .eq("user_id", user.id),
+  ]);
 
-  return <AppChrome user={user} hasCompletedRun={Boolean(firstCompleted?.id)}>{children}</AppChrome>;
+  const orgs = (orgMemberships ?? [])
+    .map((m) => m.organizations as { id: string; name: string; slug: string } | null)
+    .filter(Boolean) as { id: string; name: string; slug: string }[];
+
+  return (
+    <AppChrome
+      user={user}
+      hasCompletedRun={Boolean(firstCompleted?.id)}
+      unreadCount={unreadCount ?? 0}
+      orgs={orgs}
+    >
+      {children}
+    </AppChrome>
+  );
 }

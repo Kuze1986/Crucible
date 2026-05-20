@@ -9,16 +9,22 @@ import {
   Settings,
   UserCircle2,
   Users,
+  UsersRound,
 } from "lucide-react";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { NotificationBell } from "@/components/crucible/notification-bell";
+import { OrgSwitcher } from "@/components/crucible/org-switcher";
+
+type OrgItem = { id: string; name: string; slug: string };
 
 const nav = [
   { href: "/dashboard", label: "Command Center", icon: LayoutDashboard },
   { href: "/builder", label: "New simulation", icon: Bot },
   { href: "/library", label: "Library", icon: FolderKanban },
+  { href: "/orgs", label: "Team", icon: UsersRound },
   { href: "/profiles", label: "Profiles", icon: Users, advanced: true },
   { href: "/compare", label: "Compare", icon: BarChart3, advanced: true },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -27,10 +33,14 @@ const nav = [
 export async function AppChrome({
   user,
   hasCompletedRun,
+  unreadCount,
+  orgs,
   children,
 }: {
   user: User;
   hasCompletedRun: boolean;
+  unreadCount: number;
+  orgs: OrgItem[];
   children: React.ReactNode;
 }) {
   async function signOut() {
@@ -49,9 +59,13 @@ export async function AppChrome({
             </span>
             <span className="font-mono text-base font-semibold tracking-tight">Crucible</span>
           </Link>
-          <div className="hidden items-center gap-1 rounded-xl border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] text-white/70 md:flex">
-            <UserCircle2 className="size-3.5 text-cyan-300" />
-            Operator
+          <div className="flex items-center gap-1">
+            <NotificationBell unreadCount={unreadCount} />
+            {orgs.length > 0 && <OrgSwitcher orgs={orgs} />}
+            <div className="hidden items-center gap-1 rounded-xl border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px] text-white/70 md:flex">
+              <UserCircle2 className="size-3.5 text-cyan-300" />
+              Operator
+            </div>
           </div>
         </div>
         <div className="px-3 py-3">

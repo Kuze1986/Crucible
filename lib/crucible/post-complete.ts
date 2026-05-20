@@ -2,6 +2,7 @@ import { enrichSessionSummaryWithAnthropic } from "@/lib/integrations/anthropic"
 import { sendSimulationCompleteEmail } from "@/lib/integrations/resend";
 import { createServiceSupabaseAdmin } from "@/lib/supabase/admin";
 import { createServiceSupabaseCrucible } from "@/lib/supabase/server";
+import { deliverWebhook } from "@/lib/crucible/webhooks";
 
 import type { SessionSummaryDoc } from "@/lib/crucible/types";
 
@@ -23,6 +24,19 @@ export async function runPostSimulationHooks(runId: string) {
   };
 
   if (row.status !== "completed") return;
+
+  void crucible
+    .from("notifications")
+    .insert({
+      user_id: row.user_id,
+      type: "run_complete",
+      run_id: row.id,
+      title: `Simulation complete: ${row.title}`,
+      body: "View your report to see the full analysis.",
+    })
+    .then(({ error }) => {
+      if (error) console.error("[postComplete] notification", error);
+    });
 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
   const reportUrl = appUrl ? `${appUrl}/report?id=${row.id}` : `/report?id=${row.id}`;
@@ -70,4 +84,8 @@ export async function runPostSimulationHooks(runId: string) {
   } catch (e) {
     console.error("[postComplete] email", e);
   }
+
+  void deliverWebhook(row.id, row.user_id).catch((e: unknown) =>
+    console.error("[postComplete] webhook", e)
+  );
 }

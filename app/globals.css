@@ -136,3 +136,14 @@
     background: rgba(72, 201, 196, 0.25);
   }
 }
+
+@media print {
+  .no-print { display: none !important; }
+  aside { display: none !important; }
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111111 !important;
+  }
+  nav { display: none !important; }
+}

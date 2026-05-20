@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { requireSessionUser } from "@/app/api/crucible/_auth";
+import { createServiceSupabaseCrucible } from "@/lib/supabase/server";
 
 const PatchRunSchema = z.object({
   status: z.enum(["failed"]).optional(),
@@ -58,7 +59,7 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
   const { data: existing } = await session.supabase
     .from("simulation_runs")
-    .select("id,status")
+    .select("id,status,title")
     .eq("id", id)
     .eq("user_id", session.user.id)
     .single();
@@ -86,5 +87,22 @@ export async function PATCH(request: Request, ctx: Ctx) {
     console.error("[PATCH run]", error);
     return Response.json({ error: error.message }, { status: 500 });
   }
+
+  if (patch.status === "failed") {
+    const crucible = createServiceSupabaseCrucible();
+    void crucible
+      .from("notifications")
+      .insert({
+        user_id: session.user.id,
+        type: "run_failed",
+        run_id: id,
+        title: `Simulation cancelled: ${(existing as { title?: string } | null)?.title ?? id}`,
+        body: "The run was cancelled manually.",
+      })
+      .then(({ error: nErr }) => {
+        if (nErr) console.error("[PATCH run] notification", nErr);
+      });
+  }
+
   return Response.json({ run });
 }
