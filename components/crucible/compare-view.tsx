@@ -265,7 +265,7 @@ export function CompareView() {
               <span className="text-xs text-muted-foreground">Baseline:</span>
               <Select
                 value={String(baselineIndex)}
-                onValueChange={(v) => setBaselineIndex(Number(v))}
+                onValueChange={(v) => setBaselineIndex(Number(v ?? "0"))}
               >
                 <SelectTrigger className="h-7 w-48 border-white/10 bg-black/30 text-xs">
                   <SelectValue />

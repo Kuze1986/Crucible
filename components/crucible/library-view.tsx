@@ -105,13 +105,13 @@ export function LibraryView() {
   }, [page, sort, debouncedQ, status, profile, dateFrom, dateTo, conflictMin, conflictMax, activeOrgId]);
 
   // Filter change helpers — reset to page 1 immediately
-  function handleStatus(v: string) { setStatus(v); setPage(1); }
-  function handleProfile(v: string) { setProfile(v); setPage(1); }
-  function handleSort(v: string) { setSort(v as typeof sort); setPage(1); }
-  function handleDateFrom(v: string) { setDateFrom(v); setPage(1); }
-  function handleDateTo(v: string) { setDateTo(v); setPage(1); }
-  function handleConflictMin(v: string) { setConflictMin(v); setPage(1); }
-  function handleConflictMax(v: string) { setConflictMax(v); setPage(1); }
+  function handleStatus(v: string | null) { setStatus(v ?? "all"); setPage(1); }
+  function handleProfile(v: string | null) { setProfile(v ?? "all"); setPage(1); }
+  function handleSort(v: string | null) { setSort((v ?? "created") as typeof sort); setPage(1); }
+  function handleDateFrom(v: string | null) { setDateFrom(v ?? ""); setPage(1); }
+  function handleDateTo(v: string | null) { setDateTo(v ?? ""); setPage(1); }
+  function handleConflictMin(v: string | null) { setConflictMin(v ?? ""); setPage(1); }
+  function handleConflictMax(v: string | null) { setConflictMax(v ?? ""); setPage(1); }
 
   async function cancelRun(id: string) {
     setCancellingIds((prev) => new Set([...prev, id]));
