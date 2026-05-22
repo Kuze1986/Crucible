@@ -25,10 +25,13 @@ export async function GET() {
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  const orgs = (data ?? []).map((row) => ({
-    ...(row.organizations as Record<string, unknown>),
-    role: row.role,
-  }));
+  const orgs = (data ?? [])
+    .map((row) => {
+      const org = (row.organizations as unknown) as Record<string, unknown> | null;
+      if (!org || typeof org !== "object" || Array.isArray(org)) return null;
+      return { ...org, role: row.role };
+    })
+    .filter((o): o is Record<string, unknown> => o !== null);
 
   return Response.json({ orgs });
 }

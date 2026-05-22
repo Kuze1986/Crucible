@@ -17,10 +17,14 @@ export default async function OrgsPage() {
     .select("role, organizations(*)")
     .eq("user_id", user.id);
 
-  const orgs = (data ?? []).map((row) => ({
-    ...(row.organizations as Record<string, unknown>),
-    role: row.role as string,
-  }));
+  type OrgShape = { id: string; name: string; slug: string; owner_id: string; created_at: string };
+  const orgs = (data ?? [])
+    .map((row) => {
+      const org = (row.organizations as unknown) as OrgShape | null;
+      if (!org || typeof org !== "object" || !("id" in org)) return null;
+      return { ...org, role: row.role as string };
+    })
+    .filter((o): o is OrgShape & { role: string } => o !== null);
 
-  return <OrgList initialOrgs={orgs as Parameters<typeof OrgList>[0]["initialOrgs"]} />;
+  return <OrgList initialOrgs={orgs} />;
 }
