@@ -3,7 +3,6 @@
 import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,20 +59,16 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
 
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="relative h-8 w-8 rounded-xl p-0 hover:bg-white/[0.06]"
-          aria-label="Notifications"
-        >
-          <Bell className="size-4 text-white/70" />
-          {badge > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] font-bold leading-none text-white">
-              {badge > 99 ? "99+" : badge}
-            </span>
-          ) : null}
-        </Button>
+      <DropdownMenuTrigger
+        className="relative inline-flex h-8 w-8 items-center justify-center rounded-xl p-0 text-white/70 transition-colors hover:bg-white/[0.06] focus:outline-none"
+        aria-label="Notifications"
+      >
+        <Bell className="size-4" />
+        {badge > 0 ? (
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] font-bold leading-none text-white">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        ) : null}
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
@@ -101,22 +96,23 @@ export function NotificationBell({ unreadCount }: { unreadCount: number }) {
             </div>
           ) : (
             notifications.map((n) => (
-              <DropdownMenuItem key={n.id} asChild>
-                <a
-                  href={n.run_id ? `/report?id=${n.run_id}` : "#"}
-                  className={cn(
-                    "flex cursor-pointer flex-col gap-0.5 rounded-none px-3 py-2.5 text-xs focus:bg-white/[0.06]",
-                    !n.read_at ? "bg-white/[0.03]" : ""
-                  )}
-                >
-                  <span className="font-medium text-white/90">{n.title}</span>
-                  {n.body ? (
-                    <span className="text-muted-foreground">{n.body}</span>
-                  ) : null}
-                  <span className="text-muted-foreground/60">
-                    {new Date(n.created_at).toLocaleString()}
-                  </span>
-                </a>
+              <DropdownMenuItem
+                key={n.id}
+                className={cn(
+                  "flex cursor-pointer flex-col gap-0.5 rounded-none px-3 py-2.5 text-xs focus:bg-white/[0.06]",
+                  !n.read_at ? "bg-white/[0.03]" : ""
+                )}
+                onSelect={() => {
+                  if (n.run_id) window.location.href = `/report?id=${n.run_id}`;
+                }}
+              >
+                <span className="font-medium text-white/90">{n.title}</span>
+                {n.body ? (
+                  <span className="text-muted-foreground">{n.body}</span>
+                ) : null}
+                <span className="text-muted-foreground/60">
+                  {new Date(n.created_at).toLocaleString()}
+                </span>
               </DropdownMenuItem>
             ))
           )}
