@@ -34,9 +34,10 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
       .eq("user_id", user.id),
   ]);
 
+  type OrgShape = { id: string; name: string; slug: string };
   const orgs = (orgMemberships ?? [])
-    .map((m) => m.organizations as { id: string; name: string; slug: string } | null)
-    .filter(Boolean) as { id: string; name: string; slug: string }[];
+    .map((m) => (m.organizations as unknown) as OrgShape | null)
+    .filter((o): o is OrgShape => o !== null && typeof o === "object" && "id" in o);
 
   return (
     <AppChrome
