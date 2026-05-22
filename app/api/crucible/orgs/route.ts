@@ -31,7 +31,7 @@ export async function GET() {
       if (!org || typeof org !== "object" || Array.isArray(org)) return null;
       return { ...org, role: row.role };
     })
-    .filter((o): o is Record<string, unknown> => o !== null);
+    .filter(Boolean) as Record<string, unknown>[];
 
   return Response.json({ orgs });
 }
