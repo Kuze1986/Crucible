@@ -42,11 +42,9 @@ export function OrgSwitcher({ orgs }: { orgs: Org[] }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-xs text-white/80 hover:bg-white/[0.06]">
-          {label}
-          <ChevronDown className="size-3 text-white/40" />
-        </button>
+      <DropdownMenuTrigger className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 text-xs text-white/80 hover:bg-white/[0.06]">
+        {label}
+        <ChevronDown className="size-3 text-white/40" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[160px] border-white/10 bg-[#10172a]">
         <DropdownMenuItem

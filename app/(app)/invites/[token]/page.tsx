@@ -52,7 +52,7 @@ export default async function AcceptInvitePage({ params }: Props) {
     <AcceptInvite
       token={token}
       orgName={inv.organizations?.name ?? "an organization"}
-      role={inv.email}
+      role={inv.role}
       inviteEmail={inv.email}
       currentUserEmail={user.email ?? ""}
     />
