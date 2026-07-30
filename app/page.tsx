@@ -13,14 +13,15 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getMarketingPack } from "@/lib/vantage/client";
 
-const personas = [
+const defaultPersonas = [
   { name: "Anxious First Timer", trust: "0.19", conflict: "0.49" },
   { name: "Conflict Stress Test", trust: "0.60", conflict: "0.58" },
   { name: "Power User", trust: "0.35", conflict: "0.45" },
 ];
 
-const features = [
+const defaultFeatures = [
   {
     icon: Gauge,
     title: "Quantified Friction",
@@ -40,7 +41,42 @@ const features = [
 
 const partners = ["FullStory", "Figma", "Mixpanel", "Jira", "DemoForge"];
 
-export default function Home() {
+export default async function Home() {
+  const pack = await getMarketingPack("crucible");
+  const launch = pack?.brand?.launch;
+
+  const headline =
+    (typeof launch?.sqHeadline === "string" && launch.sqHeadline) ||
+    "ANTICIPATE HUMAN BEHAVIOR.\nSIMULATE FRICTION. BUILD TRUST.";
+  const subhead =
+    (typeof pack?.brand?.essence === "string" && pack.brand.essence) ||
+    (typeof launch?.sqSub === "string" && launch.sqSub) ||
+    "Crucible empowers product teams to model realistic personas, run autonomous simulations, and turn behavioral traces into actionable insight before shipping broadly.";
+  const cta =
+    (typeof launch?.cta === "string" && launch.cta) || "Explore the Behavioral Sandbox";
+
+  const metrics = Array.isArray(launch?.metrics) ? launch.metrics.slice(0, 3) : [];
+  const personas =
+    metrics.length >= 3
+      ? metrics.map((m) => ({
+          name: m.label,
+          trust: m.value + (m.unit ?? ""),
+          conflict: "—",
+        }))
+      : defaultPersonas;
+
+  const captionFeatures = (pack?.brand?.captions ?? [])
+    .filter((c) => c.title && c.body)
+    .slice(0, 3)
+    .map((c, i) => ({
+      icon: defaultFeatures[i]?.icon ?? Gauge,
+      title: c.title,
+      desc: c.body.slice(0, 160),
+    }));
+  const features = captionFeatures.length === 3 ? captionFeatures : defaultFeatures;
+
+  const headlineLines = headline.split("\n").filter(Boolean);
+
   return (
     <div className="min-h-screen px-4 pb-16 pt-6 md:px-8">
       <div className="mx-auto max-w-6xl">
@@ -74,20 +110,20 @@ export default function Home() {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_10%,rgba(79,202,206,0.2),transparent_45%),radial-gradient(circle_at_10%_70%,rgba(97,121,255,0.2),transparent_45%),radial-gradient(circle_at_90%_75%,rgba(145,97,255,0.15),transparent_40%)]" />
           <div className="relative">
             <h1 className="mx-auto max-w-4xl text-balance font-mono text-4xl font-semibold tracking-tight text-white md:text-6xl">
-              ANTICIPATE HUMAN BEHAVIOR.
-              <br />
-              SIMULATE FRICTION. BUILD TRUST.
+              {headlineLines.map((line, i) => (
+                <span key={`${line}-${i}`}>
+                  {line}
+                  {i < headlineLines.length - 1 ? <br /> : null}
+                </span>
+              ))}
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-pretty text-lg text-white/75">
-              Crucible empowers product teams to model realistic personas, run autonomous simulations,
-              and turn behavioral traces into actionable insight before shipping broadly.
-            </p>
+            <p className="mx-auto mt-6 max-w-3xl text-pretty text-lg text-white/75">{subhead}</p>
             <div className="mt-8 flex items-center justify-center gap-3">
               <Link
                 href="/dashboard"
                 className={cn(buttonVariants(), "h-11 rounded-2xl px-6 text-base shadow-[0_0_0_1px_rgba(138,100,255,0.4),0_0_30px_rgba(74,217,206,0.35)]")}
               >
-                Explore the Behavioral Sandbox
+                {cta}
                 <ArrowRight className="size-4" />
               </Link>
             </div>
@@ -99,20 +135,29 @@ export default function Home() {
                     <CardTitle className="text-base text-white">{p.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-xs text-white/70">
-                    <div className="flex items-center justify-between">
-                      <span>Trust</span>
-                      <span className="font-mono text-cyan-200">{p.trust}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-white/10">
-                      <div className="h-2 rounded-full bg-gradient-to-r from-cyan-300 to-blue-400" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Conflict</span>
-                      <span className="font-mono text-indigo-200">{p.conflict}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-white/10">
-                      <div className="h-2 w-2/3 rounded-full bg-gradient-to-r from-indigo-300 to-purple-400" />
-                    </div>
+                    {p.conflict === "—" ? (
+                      <div className="flex items-center justify-between">
+                        <span>Signal</span>
+                        <span className="font-mono text-cyan-200">{p.trust}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span>Trust</span>
+                          <span className="font-mono text-cyan-200">{p.trust}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/10">
+                          <div className="h-2 rounded-full bg-gradient-to-r from-cyan-300 to-blue-400" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Conflict</span>
+                          <span className="font-mono text-indigo-200">{p.conflict}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/10">
+                          <div className="h-2 w-2/3 rounded-full bg-gradient-to-r from-indigo-300 to-purple-400" />
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               ))}
