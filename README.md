@@ -12,11 +12,22 @@ Behavioral simulation platform for NEXUS Holdings. Operators configure personas 
 
 ## Setup
 
-1. Copy [`.env.example`](.env.example) to `.env.local` and fill values.
+1. Create `.env.local` with Supabase, BioLoop, and optional Vantage keys (see below).
 2. Apply SQL in [`supabase/migrations/`](supabase/migrations/) to the nexus-core project (SQL editor or Supabase CLI).
 3. `npm install` then `npm run dev`.
 
 Typecheck: `npm run typecheck` (or `pnpm run typecheck`).
+
+### Optional — Vantage marketing pack
+
+When set, the public landing page hydrates hero/feature copy from Vantage’s portfolio marketing API (`GET /v1/marketing/crucible`). If unset or unreachable, local defaults are used.
+
+```
+VANTAGE_API_URL=https://<vantage-api-host>
+VANTAGE_SERVICE_KEY=<shared secret matching vantage-api VANTAGE_SERVICE_KEY>
+# Optional:
+# VANTAGE_WORKSPACE_ID=<uuid>
+```
 
 ## Railway
 
